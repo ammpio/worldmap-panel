@@ -15,7 +15,7 @@ export class ErrorManager {
    * corresponding information.
    */
 
-  domains: Array<string> = [];
+  domains: string[] = [];
   storage: object = {};
 
   constructor() {
@@ -28,18 +28,18 @@ export class ErrorManager {
     /*
      * Add another application domain for collecting error messages.
      */
-    this.domains.push(name)
+    this.domains.push(name);
     this.reset(name);
   }
 
-  registerDomains(...names: Array<string>) {
+  registerDomains(...names: string[]) {
     /*
      * Add multiple application domains for collecting error messages.
      */
     names.forEach(this.registerDomain.bind(this));
   }
 
-  add(message: string | object | Error, args: {level?: string, domain?: string}) {
+  add(message: string | object | Error, args: { level?: string; domain?: string }) {
     /*
      * Main method for adding an error item.
      */
@@ -56,10 +56,10 @@ export class ErrorManager {
     this.storage[domain].push(item);
   }
 
-  reset(...domains: Array<string>) {
+  reset(...domains: string[]) {
     const _this = this;
-    domains.forEach(function (domain) {
-      _this.storage[domain] = <Array<ErrorItem>>[];
+    domains.forEach(domain => {
+      _this.storage[domain] = [] as ErrorItem[];
     });
   }
 
@@ -72,9 +72,9 @@ export class ErrorManager {
      * Get all error items for all application domains.
      */
     const _this = this;
-    const errors: Array<ErrorItem> = [];
-    this.domains.forEach(function(domain) {
-      _this.storage[domain].forEach(function(error) {
+    const errors: ErrorItem[] = [];
+    this.domains.forEach(domain => {
+      _this.storage[domain].forEach(error => {
         error.location = domain;
         errors.push(error);
       });
@@ -86,10 +86,10 @@ export class ErrorManager {
     /*
      * Get formatted error messages for all application domains.
      */
-    const messages:Array<string> = [];
-    this.getAll().forEach(function(item) {
-      const suffix = item.name && item.name != 'Error' ? ` (${item.name})` : '';
-      const message = `- ${item.message}${suffix}.`;
+    const messages: string[] = [];
+    this.getAll().forEach(item => {
+      const suffix = item.name && item.name !== 'Error' ? ` (${item.name})` : '';
+      const message = `- ${item.message}${suffix}`;
       messages.push(message);
     });
     return messages;
@@ -100,17 +100,15 @@ export class ErrorManager {
      * Make up the representation of a single `ErrorItem`.
      */
 
-    let errorItem = <ErrorItem>{};
+    let errorItem = {} as ErrorItem;
 
     if (thing instanceof Error) {
       errorItem.status = 'error';
       errorItem.name = thing.name;
       errorItem.message = thing.message;
-
-    } else if (typeof thing == 'string') {
+    } else if (typeof thing === 'string') {
       errorItem.name = 'Error';
       errorItem.message = thing;
-
     } else if (thing instanceof Object) {
       errorItem = thing;
     }
@@ -124,7 +122,6 @@ export class ErrorManager {
 
     return errorItem;
   }
-
 }
 
 interface ErrorItem {

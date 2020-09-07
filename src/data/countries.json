@@ -873,7 +873,7 @@
     "key": "MK",
     "latitude": 41.608635,
     "longitude": 21.745275,
-    "name": "Macedonia [FYROM]"
+    "name": "North Macedonia"
   },
   {
     "key": "ML",
@@ -1252,6 +1252,12 @@
     "latitude": 3.919305,
     "longitude": -56.027783,
     "name": "Suriname"
+  },
+  {
+    "key": "SS",
+    "latitude": 6.876992,
+    "longitude": 31.306978,
+    "name": "South Sudan"
   },
   {
     "key": "ST",

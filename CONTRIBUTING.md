@@ -1,10 +1,28 @@
-# Building WorldMap
+# Hacking on the Grafana Map Panel
 
-The easiest way to get started is to git clone the WorldMap project directly into the `data/plugins` folder in the Grafana source. (A git repo inside of a git repo)
+## Introduction
+The easiest way to get started is to git clone the project repository 
+directly into the `data/plugins` of your Grafana instance followed
+by building it there.
 
-1. Install npm packages: `npm install`
-2. Build and lint the JavaScript: `npm run build`
-2. Run the tests before submitting a PR: `npm run test`
-3. A test watcher when TDD:ing: `npm run test:watch`
+Grafana will read in the `dist` folder first. So, to see your changes in 
+Grafana, you will have to build the plugin once. However, you do not 
+need to restart your local Grafana server after every change, just 
+refreshing the page will be sufficient.
 
-Grafana will read in the dist folder first so to see your changes to WorldMap in Grafana, you have to run Grunt. However, you do not need to restart your local Grafana server after every change; just refresh the page.
+## General
+1. Display all tasks from `grafana-toolkit`: `npx grafana-toolkit --help`
+
+## Development
+1. Install packages: `npx yarn install`
+2. Bundle plugin in dev mode: `npx yarn dev`
+3. Bundle plugin in dev mode and start a watcher: `npx yarn watch`
+4. Run the tests before submitting a PR: `npx yarn test`
+
+
+# Building the Grafana Map Panel
+1. Install packages: `npx yarn install`
+2. Build into `dist/`, lint and run tests: `npx yarn build`
+3. Build plugin on CI: `npx grafana-toolkit plugin:ci-build`
+4. Create a zip package: `npx grafana-toolkit plugin:ci-package`
+   When this process succeeds, packages can be found within the `ci/packages/` folder.

@@ -1,26 +1,27 @@
-import { MetricsPanelCtrl } from "grafana/app/plugins/sdk";
+import { loadPluginCss, MetricsPanelCtrl } from 'grafana/app/plugins/sdk';
 
-import * as _ from "lodash";
-import "./css/worldmap-panel.css";
-import "./css/leaflet.css";
-import PluginSettings from "./settings";
-import WorldMap from "./worldmap";
-import {LocationSources, MapCenters} from "./model";
-import {WorldmapCore} from "./core";
-import {WorldmapChrome} from "./chrome";
-import {ErrorManager} from "./errors";
-import DataFormatter from "./data_formatter";
+import * as _ from 'lodash';
+import './styles/worldmap-panel.css';
+import './styles/leaflet.css';
+import PluginSettings from './settings';
+import WorldMap from './worldmap';
+import { LocationSources, MapCenters } from './model';
+import { WorldmapCore } from './core';
+import { WorldmapChrome } from './chrome';
+import { ErrorManager } from './errors';
+import DataFormatter from './data_formatter';
+import appEvents from 'grafana/app/core/app_events';
 
 const panelDefaults = {
   maxDataPoints: 1,
   mapFitData: false,
-  mapCenter: "(0°, 0°)",
+  mapCenter: '(0°, 0°)',
   mapCenterLatitude: 0,
   mapCenterLongitude: 0,
   initialZoom: 1,
   maximumZoom: null,
   mapZoomByRadius: null,
-  valueName: "total",
+  valueName: 'total',
   circleMinSize: 2,
   circleMaxSize: 30,
   circleOptions: {
@@ -28,14 +29,10 @@ const panelDefaults = {
     strokeWeight: 3,
   },
   locationData: null,
-  thresholds: "0,10",
-  colors: [
-    "rgba(245, 54, 54, 0.9)",
-    "rgba(237, 129, 40, 0.89)",
-    "rgba(50, 172, 45, 0.97)"
-  ],
-  unitSingular: "",
-  unitPlural: "",
+  thresholds: '0,10',
+  colors: ['rgba(245, 54, 54, 0.9)', 'rgba(237, 129, 40, 0.89)', 'rgba(50, 172, 45, 0.97)'],
+  unitSingular: '',
+  unitPlural: '',
   showLegend: true,
   legendContainerSelector: null,
   showZoomControl: true,
@@ -43,10 +40,12 @@ const panelDefaults = {
   customAttribution: false,
   customAttributionText: null,
   mouseWheelZoom: false,
+  dragging: true,
+  doubleClickZoom: true,
   esGeoPoint: null,
   // Todo: Investigate: Is "Count" a reasonable default here
   //  or does it confuse the operator?
-  esMetric: "Count",
+  esMetric: 'Count',
   esLocationName: null,
   esLink: null,
   decimals: 0,
@@ -62,11 +61,11 @@ const panelDefaults = {
   autoPanLabels: true,
   autoWidthLabels: true,
   tableQueryOptions: {
-    queryType: "geohash",
-    geohashField: "geohash",
-    latitudeField: "latitude",
-    longitudeField: "longitude",
-    metricField: "metric",
+    queryType: 'geohash',
+    geohashField: 'geohash',
+    latitudeField: 'latitude',
+    longitudeField: 'longitude',
+    metricField: 'metric',
     labelField: null,
     labelLocationKeyField: null,
     linkField: null,
@@ -76,16 +75,16 @@ const panelDefaults = {
 };
 
 export default class WorldmapCtrl extends MetricsPanelCtrl {
-  static templateUrl = "partials/module.html";
+  static templateUrl = 'partials/module.html';
 
   locations: any;
-  tileServer: string;
-  saturationClass: string;
+  tileServer = '';
+  saturationClass = '';
   map: any;
   series: any;
   data: any = [];
   dataInfo: any;
-  mapCenterMoved: boolean;
+  mapCenterMoved = false;
 
   contextSrv: any;
   $location: any;
@@ -99,7 +98,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
 
   initializing: boolean;
 
-  /** @ngInject **/
+  /** @ngInject */
   constructor($scope, $injector, $element, $document, contextSrv, templateSrv, $location) {
     super($scope, $injector);
 
@@ -107,11 +106,14 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.$document = $document;
     this.contextSrv = contextSrv;
 
+    this.loadCss();
+
     this.initializing = true;
 
     this.errors = new ErrorManager();
     this.errors.registerDomains('data', 'location');
 
+    this.settings = undefined;
     this.loadSettings();
 
     this.core = new WorldmapCore(this);
@@ -124,6 +126,13 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.loadLocationData();
   }
 
+  loadCss() {
+    loadPluginCss({
+      dark: `plugins/${this.pluginId}/styles/dark.css`,
+      light: `plugins/${this.pluginId}/styles/light.css`,
+    });
+  }
+
   loadSettings() {
     /*
      * Initialize the plugin setting subsystem to provide `this.settings`.
@@ -134,12 +143,10 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.settings = new PluginSettings(this.panel, this.templateSrv, query);
 
     // Establish a virtual settings property accessible through `this.settings.center`.
-    const _this = this;
     Object.defineProperty(this.settings, 'center', {
-      get: function() { return _this.core.getMapDimensions() },
+      get: () => this.core.getMapDimensions(),
       enumerable: true,
     });
-
   }
 
   setupGlobal() {
@@ -166,11 +173,11 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     /*
      * Attach plugin event handlers.
      */
-    this.events.on("refresh", this.onRefresh.bind(this));
-    this.events.on("init-edit-mode", this.onInitEditMode.bind(this));
-    this.events.on("data-received", this.onDataReceived.bind(this));
-    this.events.on("panel-teardown", this.onPanelTeardown.bind(this));
-    this.events.on("data-snapshot-load", this.onDataSnapshotLoad.bind(this));
+    this.events.on('refresh', this.onRefresh.bind(this));
+    this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
+    this.events.on('data-received', this.onDataReceived.bind(this));
+    this.events.on('panel-teardown', this.onPanelTeardown.bind(this));
+    this.events.on('data-snapshot-load', this.onDataSnapshotLoad.bind(this));
   }
 
   setupMap() {
@@ -198,7 +205,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     } else if (this.tileServer === 'Esri Satellite') {
       this.saturationClass = 'map-desaturate';
     } else {
-      this.saturationClass = "";
+      this.saturationClass = '';
     }
   }
 
@@ -219,15 +226,13 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
 
     try {
       this.core.acquireLocations();
-
     } catch (e) {
-      this.errors.add(e, {domain: 'location'});
+      this.errors.add(e, { domain: 'location' });
       this.setLocations();
     }
-
   }
 
-  setLocations(res:Array<any> = []) {
+  setLocations(res: any[] = []) {
     /*
      * Will be called when location information arrived.
      */
@@ -250,7 +255,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     console.info('Refreshing panel. initializing=', this.initializing);
     this.errors.reset('data');
 
-    if (!this.loading && !this.initializing && (_.isEmpty(this.locations) && _.isEmpty(this.panel.snapshotLocationData))) {
+    if (!this.loading && !this.initializing && _.isEmpty(this.locations) && _.isEmpty(this.panel.snapshotLocationData)) {
       this.loadLocationData(true);
     }
   }
@@ -265,35 +270,35 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
      * Obtain data from the Grafana data source,
      * decode appropriately and render the map.
      */
-
     console.info('Data received:', dataList);
 
     // Is this the right place to indicate the plugin has been initialized?
     this.initializing = false;
 
     try {
+      if (this.dashboard.snapshot && this.locations) {
+        this.panel.snapshotLocationData = this.locations;
+      }
+
       this.processData(dataList);
 
       this.updateThresholdData();
 
-      const autoCenterMap =
-          this.settings.mapCenter === "First GeoHash" ||
-          this.settings.mapCenter === "Last GeoHash" ||
-          this.settings.mapFitData;
+      const autoCenterMap = this.settings.mapCenter === 'First GeoHash' || this.settings.mapCenter === 'Last GeoHash' || this.settings.mapFitData;
 
       if (this.data.length && autoCenterMap) {
         this.updateMapCenter(false);
       }
-
-    } catch (e) {
-      this.errors.add(e, {domain: 'data'});
-      throw e;
-
+    } catch (err) {
+      this.errors.add(err, { domain: 'data' });
+      appEvents.emit('alert-error', ['Data error', err.toString()]);
     } finally {
+      // Propagate warnings and errors to tooltip in panel corner.
+      this.propagateWarningsAndErrors();
+
+      // Trigger the rendering process.
       this.render();
-
     }
-
   }
 
   processData(dataList) {
@@ -305,9 +310,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     if (_.isEmpty(dataList)) {
       this.resetData();
       this.resetLocations();
-      this.errors.add(
-        'No data received, please check data source and time range',
-        {level: 'warning', domain: 'data'});
+      this.errors.add('No data received, please check data source and time range', { level: 'warning', domain: 'data' });
       return;
     }
 
@@ -323,8 +326,9 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     try {
       const decodedData = this.core.decodeData(dataList, this.dataInfo.type);
       this.data = decodedData.data;
-      if (decodedData.series) this.series = decodedData.series;
-
+      if (decodedData.series) {
+        this.series = decodedData.series;
+      }
     } catch (ex) {
       //this.resetDataErrors();
       //this.resetLocationErrors();
@@ -337,7 +341,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
 
   updateThresholdData() {
     // FIXME: Isn't `this.data` actually an array?
-    this.data.thresholds = this.settings.thresholds.split(",").map(strValue => {
+    this.data.thresholds = this.settings.thresholds.split(',').map(strValue => {
       return Number(strValue.trim());
     });
     while (_.size(this.settings.colors) > _.size(this.data.thresholds) + 1) {
@@ -346,7 +350,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     }
     while (_.size(this.settings.colors) < _.size(this.data.thresholds) + 1) {
       // not enough colors. add one.
-      const newColor = "rgba(50, 172, 45, 0.97)";
+      const newColor = 'rgba(50, 172, 45, 0.97)';
       this.settings.colors.push(newColor);
     }
   }
@@ -356,11 +360,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
   }
 
   onInitEditMode() {
-    this.addEditorTab(
-      "Worldmap",
-      "public/plugins/grafana-worldmap-panel/partials/editor.html",
-      2
-    );
+    this.addEditorTab('Worldmap', `public/plugins/${this.pluginId}/partials/editor.html`, 2);
   }
 
   propagateWarningsAndErrors() {
@@ -383,78 +383,65 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
   }
 
   link(scope, elem, attrs, ctrl) {
-    /*
-     * Hook the panel into the rendering phase.
-     */
+    let firstRender = true;
 
-    ctrl.events.on("render", (ev) => {
-
-      // Perform rendering.
+    ctrl.events.on('render', () => {
       render();
       ctrl.renderingCompleted();
-      console.info('Rendering panel completed');
-
-      // Propagate warnings and errors to tooltip in panel corner.
-      ctrl.propagateWarningsAndErrors();
     });
 
     function render() {
-
-      console.info('Rendering panel');
       if (!ctrl.data) {
         return;
       }
 
-      const mapContainer = elem.find(".mapcontainer");
-
-      if (mapContainer[0].id.indexOf("{{") > -1) {
+      // delay first render as the map panel sizing is bugged first render even though the element has correct height
+      if (firstRender) {
+        firstRender = false;
+        setTimeout(render, 100);
         return;
       }
 
-      console.info('Rendering map');
-      if (!ctrl.map) {
+      const mapContainer = elem.find('.mapcontainer');
 
-        // Create map.
+      if (mapContainer[0].id.indexOf('{{') > -1) {
+        return;
+      }
+
+      if (!ctrl.map) {
         const map = new WorldMap(ctrl, mapContainer[0]);
         map.createMap();
         ctrl.map = map;
-
-        // When rendering the first time, make sure to signal `panToMapCenter()`.
-        ctrl.mapCenterMoved = true;
-
-        // Render the map the first time, timing-safe.
-        ctrl.map.renderMapFirst();
-
-      } else {
-        // Invoke regular map rendering.
-        ctrl.map.renderMap();
       }
 
+      ctrl.map.resize();
+
+      if (!ctrl.map.legend && ctrl.panel.showLegend) {
+        ctrl.map.createLegend();
+      }
+
+      ctrl.map.drawCircles();
+
+      if (ctrl.mapCenterMoved) {
+        ctrl.map.panToMapCenter();
+      }
     }
   }
-
 
   /* Data format indicators */
   // Todo: Refactor them to improved LocationType system, see `model.ts`.
 
   showTableOptions() {
-    return _.startsWith(this.settings.locationData, "table");
+    return _.startsWith(this.settings.locationData, 'table');
   }
 
   showTableGeohashOptions() {
-    return (
-      this.showTableOptions() &&
-      this.settings.tableQueryOptions.queryType === "geohash"
-    );
+    return this.showTableOptions() && this.settings.tableQueryOptions.queryType === 'geohash';
   }
 
   showTableCoordinateOptions() {
-    return (
-      this.showTableOptions() &&
-      this.settings.tableQueryOptions.queryType === "coordinates"
-    );
+    return this.showTableOptions() && this.settings.tableQueryOptions.queryType === 'coordinates';
   }
-
 
   /* Data accessors */
   reset() {
@@ -475,7 +462,6 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.panel.snapshotLocationData = undefined;
   }
 
-
   /* Actions with rendering */
 
   reload() {
@@ -495,10 +481,12 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.render();
   }
 
-  updateMapCenter(render:boolean = true) {
+  updateMapCenter(render = true) {
     // Signal `panToMapCenter()` and trigger rendering.
     this.mapCenterMoved = true;
-    render && this.render();
+    if (render) {
+      this.render();
+    }
   }
 
   teardownMap() {
@@ -520,18 +508,26 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.render();
   }
 
+  toggleDragging() {
+    this.map.setDragging();
+    this.render();
+  }
+
+  toggleDoubleClickZoom() {
+    this.map.setDoubleClickZoom();
+    this.render();
+  }
+
   toggleCustomAttribution() {
     if (this.settings.customAttribution) {
-
       const attributionControl = this.map.map.attributionControl;
 
       // When switching on custom attributions and the text is
       // empty yet, use the value which is currently active.
       if (!this.panel.customAttributionText) {
-
         // Collect active attributions.
-        const entries:Array<any> = [];
-        for (let key in attributionControl._attributions) {
+        const entries: any[] = [];
+        for (const key in attributionControl._attributions) {
           entries.push(key);
         }
 
@@ -543,7 +539,6 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
       attributionControl._attributions = {};
       attributionControl._update();
       this.render();
-
     } else {
       // The operator wants vanilla attributions again, so let's start over.
       this.restart();
@@ -561,8 +556,6 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
     this.render();
   }
 
-
-
   /* Form choice accessors */
 
   // Todo: Refactor to `model.ts`.
@@ -572,12 +565,12 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
   }
 
   getSelectedLocationType() {
-    const locationSource:any = _.find(LocationSources, {id: this.settings.locationData });
+    const locationSource: any = _.find(LocationSources, { id: this.settings.locationData });
     return locationSource.type ? locationSource.type.replace('Format: ', '') : undefined;
   }
 
   getSelectedLocationFormat() {
-    const locationSource:any = _.find(LocationSources, {id: this.settings.locationData });
+    const locationSource: any = _.find(LocationSources, { id: this.settings.locationData });
     if (_.isArray(locationSource.format)) {
       return locationSource.format.join(' or ');
     } else {
@@ -590,8 +583,7 @@ export default class WorldmapCtrl extends MetricsPanelCtrl {
   }
 
   getSelectedMapCenter() {
-    const mapCenter:any = _.find(MapCenters, {id: this.settings.mapCenter });
+    const mapCenter: any = _.find(MapCenters, { id: this.settings.mapCenter });
     return mapCenter && mapCenter.data;
   }
-
 }

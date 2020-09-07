@@ -1,13 +1,22 @@
-import WorldMap from './worldmap';
 import DataBuilder from '../test/data_builder';
-import $ from "jquery";
+import { createBasicMap } from '../test/map_builder';
+import $ from 'jquery';
+import PluginSettings from './settings';
+import { TemplateSrv } from 'grafana/app/features/templating/template_srv';
 
 describe('Worldmap', () => {
   let worldMap;
   let ctrl;
 
   beforeEach(() => {
-    setupWorldmapFixture();
+    worldMap = createBasicMap();
+    ctrl = worldMap.ctrl;
+    worldMap.createMap();
+  });
+
+  afterEach(() => {
+    const fixture: HTMLElement = document.getElementById('fixture')!;
+    document.body.removeChild(fixture);
   });
 
   describe('when a Worldmap is created', () => {
@@ -261,9 +270,9 @@ describe('Worldmap', () => {
       expect(worldMap.legend).toBeDefined();
       expect(worldMap.legend._div.outerHTML).toBe(
         '<div class="info legend leaflet-control">' +
-        '<div class="legend-item">' +
-        '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2+</div>' +
-        '</div>'
+          '<div class="legend-item">' +
+          '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2+</div>' +
+          '</div>'
       );
     });
   });
@@ -290,8 +299,8 @@ describe('Worldmap', () => {
       expect(worldMap.legend).toBeDefined();
       expect(worldMap.legend._div.outerHTML).toBe(
         '<div class="info legend leaflet-control"><div class="legend-item">' +
-        '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2–4</div>' +
-        '<div class="legend-item"><i style="background:green"></i> 4+</div></div>'
+          '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2–4</div>' +
+          '<div class="legend-item"><i style="background:green"></i> 4+</div></div>'
       );
     });
   });
@@ -306,9 +315,9 @@ describe('Worldmap', () => {
       expect(worldMap.legend).toBeDefined();
       expect(worldMap.legend._div.outerHTML).toBe(
         '<div class="info legend leaflet-control"><div class="legend-item">' +
-        '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2–4</div>' +
-        '<div class="legend-item"><i style="background:green"></i> 4–6</div>' +
-        '<div class="legend-item"><i style="background:undefined"></i> 6+</div></div>'
+          '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2–4</div>' +
+          '<div class="legend-item"><i style="background:green"></i> 4–6</div>' +
+          '<div class="legend-item"><i style="background:undefined"></i> 6+</div></div>'
       );
     });
   });
@@ -325,7 +334,7 @@ describe('Worldmap', () => {
      * options here to proof they actually toggle the visibility
      * of the respective control elements.
      *
-     * See also https://community.hiveeyes.org/t/grafana-worldmap-panel-0-3-0-dev-series/1824/3
+     * See also https://community.hiveeyes.org/t/grafana-worldmap-panel-ng/1824/3
      */
     beforeEach(() => {
       ctrl.data = new DataBuilder().withThresholdValues([2, 4, 6]).build();
@@ -337,7 +346,7 @@ describe('Worldmap', () => {
     it('we should find the respective element at the appropriate place in the DOM', () => {
       expect(worldMap.legend).toBeDefined();
       expect($('.shared-map-legend')[0].innerHTML).toBe(
-          '<div class="info legend leaflet-control"><div class="legend-item">' +
+        '<div class="info legend leaflet-control"><div class="legend-item">' +
           '<i style="background:red"></i> &lt; 2</div><div class="legend-item"><i style="background:blue"></i> 2–4</div>' +
           '<div class="legend-item"><i style="background:green"></i> 4–6</div>' +
           '<div class="legend-item"><i style="background:undefined"></i> 6+</div></div>'
@@ -345,59 +354,75 @@ describe('Worldmap', () => {
     });
   });
 
-  afterEach(() => {
-    const fixture: HTMLElement = document.getElementById('fixture')!;
-    document.body.removeChild(fixture);
+  describe('when the data has two points at the same spot', () => {
+    beforeEach(() => {
+      ctrl.data = new DataBuilder()
+        .withCountryAndValue('SE', 1)
+        .withCountryAndValue('SE', 2)
+        .build();
+      worldMap.drawCircles();
+    });
+
+    it('should draw just one circle on the map', () => {
+      expect(worldMap.circles.length).toBe(1);
+    });
+
+    it('should create a single circle popup with both data point values', () => {
+      expect(worldMap.circles[0]._popup._content).toBe('Sweden: 1\nSweden: 2');
+    });
   });
 
-  function setupWorldmapFixture() {
-    const fixture = '<div id="fixture" class="mapcontainer"></div>';
-    document.body.insertAdjacentHTML('afterbegin', fixture);
+  describe('when the data is updated with two points at the same spot', () => {
+    beforeEach(() => {
+      ctrl.data = new DataBuilder()
+        .withCountryAndValue('SE', 1)
+        .withCountryAndValue('IE', 1)
+        .build();
+      worldMap.drawCircles();
 
-    ctrl = {
-      panel: {
-        center: {
-          mapCenterLatitude: 0,
-          mapCenterLongitude: 0,
-          initialZoom: 1,
-        },
-        colors: ['red', 'blue', 'green'],
-        circleOptions: {},
-      },
-      tileServer: 'CartoDB Positron',
-    };
+      ctrl.data = new DataBuilder()
+        .withCountryAndValue('SE', 1)
+        .withCountryAndValue('IE', 1)
+        .withCountryAndValue('SE', 2)
+        .build();
+      worldMap.drawCircles();
+    });
 
-    // This mimics the `ctrl.panel` proxying established
-    // by `PluginSettings` to make the tests happy.
-    // Todo: Don't worry, this will go away.
-    ctrl.settings = ctrl.panel;
+    it('should draw just one circle on the map', () => {
+      expect(worldMap.circles.length).toBe(2);
+    });
 
-    worldMap = new WorldMap(ctrl, document.getElementsByClassName('mapcontainer')[0]);
-    worldMap.createMap();
-  }
+    it('should create a single circle popup with both data point values', () => {
+      expect(worldMap.circles[0]._popup._content).toBe('Sweden: 1\nSweden: 2');
+    });
+  });
 });
-
 
 describe('WorldmapFoundation', () => {
   /*
-   * Optimizations for small maps
-   *
-   * In order to test the `createMap()` method,
-   * we need to pass a half-configured `WorldMap`
+   * In order to individually configure the map before the `createMap()`
+   * method will be invoked, we need to pass a half-configured `WorldMap`
    * instance into the test cases.
    *
    * We are testing the "showZoomControl" and "showAttribution"
    * options here to proof they actually toggle the visibility
-   * of the respective control elements.
+   * of the respective control elements. These have been introduced
+   * to optimize Worldmap for small maps.
    *
-   * See also https://community.hiveeyes.org/t/grafana-worldmap-panel-0-3-0-dev-series/1824/3
+   * See also https://community.hiveeyes.org/t/grafana-worldmap-panel-ng/1824/3
    */
 
   let worldMap;
   let ctrl;
 
   beforeEach(() => {
-    setupWorldmapHalfFixture();
+    worldMap = createBasicMap();
+    ctrl = worldMap.ctrl;
+  });
+
+  afterEach(() => {
+    const fixture: HTMLElement = document.getElementById('fixture')!;
+    document.body.removeChild(fixture);
   });
 
   describe('when a Worldmap is created with default parameters', () => {
@@ -409,7 +434,6 @@ describe('WorldmapFoundation', () => {
       expect(document.getElementsByClassName('leaflet-container')[0]).toBeDefined();
       expect(document.getElementsByClassName('leaflet-control-zoom')[0]).toBeDefined();
       expect(document.getElementsByClassName('leaflet-control-attribution')[0]).toBeDefined();
-
     });
   });
 
@@ -434,37 +458,95 @@ describe('WorldmapFoundation', () => {
       expect(document.getElementsByClassName('leaflet-control-attribution')[0]).toBeUndefined();
     });
   });
+});
+
+describe('ClickthroughLinks', () => {
+  /*
+   * These tests proof the clickthrough link works.
+   *
+   * See also https://community.hiveeyes.org/t/developing-grafana-worldmap-ng/1824/13
+   */
+
+  let worldMap;
+  let ctrl;
+
+  // https://github.com/grafana/grafana/blob/v6.5.2/public/app/plugins/datasource/loki/datasource.test.ts#L28-L31
+  const templateSrvMock = ({
+    getAdhocFilters: (): any[] => [],
+    replace: (a: string) => a,
+  } as unknown) as TemplateSrv;
+
+  beforeEach(() => {
+    worldMap = createBasicMap();
+    ctrl = worldMap.ctrl;
+    //ctrl.loadSettings();
+  });
 
   afterEach(() => {
     const fixture: HTMLElement = document.getElementById('fixture')!;
     document.body.removeChild(fixture);
   });
 
-  function setupWorldmapHalfFixture() {
-    const fixture = '<div id="fixture" class="mapcontainer"></div>';
-    document.body.insertAdjacentHTML('afterbegin', fixture);
+  describe('when a Worldmap is created with clickthrough-links enabled', () => {
+    beforeEach(() => {
+      // Create map.
+      ctrl.panel.clickthroughUrl = 'http://foo.bar';
+      ctrl.settings = new PluginSettings(ctrl.panel, templateSrvMock, {});
+      worldMap.createMap();
 
-    ctrl = {
-      panel: {
-        center: {
-          mapCenterLatitude: 0,
-          mapCenterLongitude: 0,
-          initialZoom: 1,
-        },
-        colors: ['red', 'blue', 'green'],
-        circleOptions: {},
-        showZoomControl: true,
-        showAttribution: true,
-      },
-      tileServer: 'CartoDB Positron',
-    };
+      // Load data and draw circles.
+      ctrl.data = new DataBuilder().withCountryAndValue('SE', 1).build();
+      worldMap.drawCircles();
+    });
 
-    // This mimics the `ctrl.panel` proxying established
-    // by `PluginSettings` to make the tests happy.
-    // Todo: Don't worry, this will go away.
-    ctrl.settings = ctrl.panel;
+    it('should have registered a second click event', () => {
+      expect(worldMap.circles.length).toBe(1);
+      expect(worldMap.circles[0]._events.click.length).toBe(2);
+    });
 
-    worldMap = new WorldMap(ctrl, document.getElementsByClassName('mapcontainer')[0]);
-  }
+    it('should do its job when actually clicked', () => {
+      // Setup interaction mock for "window.location.assign".
+      // https://remarkablemark.org/blog/2018/11/17/mock-window-location/
+      Object.defineProperty(window.location, 'assign', {
+        configurable: true,
+      });
+      window.location.assign = jest.fn();
 
+      // Capture interaction.
+      worldMap.circles[0].fire('click');
+      expect(window.location.assign).toHaveBeenCalledWith('http://foo.bar');
+    });
+  });
+
+  describe('when a Worldmap is created with clickthrough-links enabled to another window', () => {
+    beforeEach(() => {
+      // Create map.
+      ctrl.panel.clickthroughUrl = 'http://foo.bar';
+      ctrl.panel.clickthroughOptions = { windowName: 'test' };
+      ctrl.settings = new PluginSettings(ctrl.panel, templateSrvMock, {});
+      worldMap.createMap();
+
+      // Load data and draw circles.
+      ctrl.data = new DataBuilder().withCountryAndValue('SE', 1).build();
+      worldMap.drawCircles();
+    });
+
+    it('should have registered a second click event', () => {
+      expect(worldMap.circles.length).toBe(1);
+      expect(worldMap.circles[0]._events.click.length).toBe(2);
+    });
+
+    it('should do its job when actually clicked', () => {
+      // Setup interaction mock for "window.open".
+      // https://remarkablemark.org/blog/2018/11/17/mock-window-location/
+      Object.defineProperty(window, 'open', {
+        configurable: true,
+      });
+      window.open = jest.fn();
+
+      // Capture interaction.
+      worldMap.circles[0].fire('click');
+      expect(window.open).toHaveBeenCalledWith('http://foo.bar', 'test');
+    });
+  });
 });

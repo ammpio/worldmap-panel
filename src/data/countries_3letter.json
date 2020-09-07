@@ -765,7 +765,7 @@
     "key": "MKD",
     "latitude": 41.8333,
     "longitude": 22,
-    "name": "Macedonia, the former Yugoslav Republic of"
+    "name": "North Macedonia"
   },
   {
     "key": "MDG",
@@ -1228,6 +1228,12 @@
     "latitude": 4,
     "longitude": -56,
     "name": "Suriname"
+  },
+  {
+    "key": "SSD",
+    "latitude": 6.876992,
+    "longitude": 31.306978,
+    "name": "South Sudan"
   },
   {
     "key": "SJM",

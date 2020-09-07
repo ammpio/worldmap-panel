@@ -3,3 +3,12 @@ npm-debug.log
 .DS_Store
 .vscode
 .idea
+
+dist/
+coverage/
+artifacts/
+
+.venv*
+bin/
+build/
+ci/

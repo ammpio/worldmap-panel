@@ -1,17 +1,12 @@
-# Worldmap Panel Plugin for Grafana
+# Grafana Map Panel
 
-**The [Grafana Worldmap Panel 0.3.0-dev series] ([changes]) is a work in progress, please don't use it in production yet. We are happy for testing and feedback.**
+The Grafana Map Panel is a tile map of the world that can be overlaid with circles representing data points from a query. It can be used with time series metrics, with geohash data from Elasticsearch or data in the Table format.
 
-[Grafana Worldmap Panel 0.3.0-dev series]: https://github.com/hiveeyes/grafana-worldmap-panel
-[changes]: https://github.com/hiveeyes/grafana-worldmap-panel/blob/develop/CHANGELOG.md
+![Grafana Map](https://raw.githubusercontent.com/grafana/worldmap-panel/54f83cfdc7339fee02df00933422c35630677330/src/images/worldmap-world.png)
 
-The Worldmap Panel is a tile map of the world that can be overlaid with circles representing data points from a query. It can be used with time series metrics, with geohash data from Elasticsearch or data in the Table format.
+## How this works (theory and examples)
 
-![Worldmap](https://raw.githubusercontent.com/grafana/worldmap-panel/54f83cfdc7339fee02df00933422c35630677330/src/images/worldmap-world.png)
-
-## How The Worldmap Works (Theory and Examples)
-
-The Worldmap panel needs two sources of data:
+This plugin needs two sources of data:
 
 - a location (latitude and longitude)
 - data that has a link to a location
@@ -55,7 +50,7 @@ Location data should be in the JSON format and should be an array of JSON object
 ]
 ```
 
-The Worldmap will then match the metric name (target in the example data) with a key field from the location data. With this example data there will be two circles drawn on the map, one for Sweden and one for the United States with values 183255 and 192224.
+The metric name (target in the example data) will be matched with a key field from the location data. With this example data there will be two circles drawn on the map, one for Sweden and one for the United States with values 183255 and 192224.
 
 ### Table Format
 
@@ -84,7 +79,7 @@ Table data is tabular data with columns and rows. Here is an example of Table da
 ]
 ```
 
-This query contains both data (the value `75.654324173059`) and a location (the geohash `9wvfgzurfzb` which is in Colorado). So using these, the Worldmap panel will draw one circle in Colorado, USA with the value 75.654324173059.
+This query contains both data (the value `75.654324173059`) and a location (the geohash `9wvfgzurfzb` which is in Colorado). So using these, one circle will be drawn in Colorado, USA with the value 75.654324173059.
 
 ## Time Series Data as the Data Source
 
@@ -126,7 +121,7 @@ Use the aliasByNode function to point to the field containing the country code. 
 
 ![Graphite Query for Countries](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/worldmap-timeseries-query.png)
 
-Example dashboard for Worldmap with Graphite queries on [the Grafana play site](http://localhost:3000/d/000000003/worldmap-panels?panelId=8&fullscreen&edit&orgId=1).
+Example dashboard with Graphite queries on [the Grafana play site](http://localhost:3000/d/000000003/worldmap-panels?panelId=8&fullscreen&edit&orgId=1).
 
 #### InfluxDB Query
 
@@ -142,19 +137,19 @@ Use a Group By clause on the field containing the country code and a Then by cla
 
 #### Map Data Options for Time Series Data
 
-Under the Worldmap tab, choose either the `countries` or `states` option.
+On the editor tab, choose either the `countries` or `states` option.
 
-![Worldmap Options for Countries](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/countries-option.png)
+![Options for Countries](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/countries-option.png)
 
 Using a JSON endpoint to return a custom list of locations:
 
-![Worldmap Options for JSON](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/json-endpoint.png)
+![Options for JSON](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/json-endpoint.png)
 
 The endpoint used here is for the demo version of worldPing - [https://worldpingdemo.grafana.net/api/plugin-proxy/raintank-worldping-app/api/v2/probes/locations](https://worldpingdemo.grafana.net/api/plugin-proxy/raintank-worldping-app/api/v2/probes/locations). If you have your own endpoint defined it must be reachable from the client side, as it is approached by client's browser.
 
 Using a JSONP endpoint (if you need to wrap the JSON to get around CORS problems):
 
-![Worldmap Options for JSONP](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/jsonp-endpoint.png)
+![Options for JSONP](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/jsonp-endpoint.png)
 
 For some details on troubleshooting JSON/JSONP check [#47](https://github.com/grafana/worldmap-panel/issues/47).
 
@@ -164,9 +159,9 @@ Supported Databases:
 
 - ElasticSearch
 
-The [Geo-point](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/geo-point.html) data type with geohash indexing in Elasticsearch can also be used as a datasource for the worldmap panel. Grafana has a new bucket aggregate for Elasticsearch queries - Geo Hash Grid that allows grouping of coordinates. The Geo Hash Grid has a precision option where 1 is the highest level and 7 is the lowest.
+The [Geo-point](https://www.elastic.co/guide/en/elasticsearch/reference/2.3/geo-point.html) data type with geohash indexing in Elasticsearch can also be used as a datasource. Grafana has a new bucket aggregate for Elasticsearch queries - Geo Hash Grid that allows grouping of coordinates. The Geo Hash Grid has a precision option where 1 is the highest level and 7 is the lowest.
 
-![Elasticsearch Query for Worldmap](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/worldmap-geohash-query.png)
+![Elasticsearch Query](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/worldmap-geohash-query.png)
 
 Three fields need to be provided by the ElasticSearch query:
 
@@ -174,7 +169,7 @@ Three fields need to be provided by the ElasticSearch query:
 - Location Name (optional - geohash value will be shown if not chosen)
 - geo_point field that provides the geohash value.
 
-![Elasticsearch Query for Worldmap](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/es-options.png)
+![Elasticsearch Query](https://raw.githubusercontent.com/grafana/worldmap-panel/master/src/images/es-options.png)
 
 ## Table Data as the Data Source
 
@@ -195,7 +190,7 @@ Similar to the Elasticsearch query above, 3 fields are expected (2 of them are m
 - A *geohash* field. This is used to calculate where the circle should be drawn.
 - an optional location name field (shown in the mouse over). Used to label each circle on the map. If it is empty then the geohash value is used as the label.
 
-The field mappings have to be specified on the Worldmap settings tab.
+The field mappings have to be specified on the Grafana Map settings tab.
 
 ![Example influxdb query](https://cloud.githubusercontent.com/assets/434655/16535977/8cd520be-3fec-11e6-8dc9-2ecf7b16ad5f.png)
 
@@ -211,7 +206,7 @@ The Table Data format also works with two columns for latitude and longitude ins
 
 Supported Databases:
 
-- Warp&nbsp;10 via [grafana-warp10-datasource](https://github.com/cityzendata/grafana-warp10) plugin  
+- Warp&nbsp;10 via [grafana-warp10-datasource](https://github.com/cityzendata/grafana-warp10) plugin
 
 It supports any datasource capable of generating a JSON response with a custom list of locations (the same format that for the JSON endpoint).
 
@@ -219,7 +214,7 @@ It supports any datasource capable of generating a JSON response with a custom l
 
 #### Location Data
 
-There are four ways to provide data for the worldmap panel:
+There are four ways to provide data to this plugin:
 
  - *countries*: This is a list of all the countries in the world. It works by matching a country code (US, FR, AU) to a node alias in a time series query.
  - *states*: Similar to countries but for the states in USA e.g. CA for California
@@ -284,4 +279,4 @@ The threshold field also accepts 2 or more comma-separated values. For example, 
 
 ### CHANGELOG
 
-The latest changes can be found here: [CHANGELOG.md](https://github.com/grafana/worldmap-panel/blob/master/CHANGELOG.md)
+The latest changes can be found here: [CHANGELOG.md](https://github.com/panodata/grafana-map-panel/blob/master/CHANGELOG.md)

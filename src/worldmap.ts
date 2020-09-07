@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import $ from "jquery";
+import $ from 'jquery';
 import * as L from './libs/leaflet';
 import WorldmapCtrl from './worldmap_ctrl';
 
@@ -7,15 +7,13 @@ const tileServers = {
   'CartoDB Positron': {
     url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
     attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> ' +
-      '&copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> ' + '&copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
     subdomains: 'abcd',
   },
   'CartoDB Dark': {
     url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
     attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> ' +
-      '&copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> ' + '&copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
     subdomains: 'abcd',
   },
   'Esri Satellite': {
@@ -46,12 +44,9 @@ export default class WorldMap {
 
   createMap() {
     const center = this.ctrl.settings.center;
-    const mapCenter = (<any>window).L.latLng(
-      center.mapCenterLatitude,
-      center.mapCenterLongitude
-    );
+    const mapCenter = (window as any).L.latLng(center.mapCenterLatitude, center.mapCenterLongitude);
 
-    let zoomLevel = this.getEffectiveZoomLevel(center.mapZoomLevel);
+    const zoomLevel = this.getEffectiveZoomLevel(center.mapZoomLevel);
 
     this.map = L.map(this.mapContainer, {
       worldCopyJump: true,
@@ -62,29 +57,29 @@ export default class WorldMap {
       attributionControl: this.ctrl.settings.showAttribution,
     });
     this.setMouseWheelZoom();
+    this.setDragging();
+    this.setDoubleClickZoom();
 
     const selectedTileServer = tileServers[this.ctrl.tileServer];
-    (<any>window).L.tileLayer(selectedTileServer.url, {
+    (window as any).L.tileLayer(selectedTileServer.url, {
       maxZoom: 18,
       subdomains: selectedTileServer.subdomains,
       reuseTiles: true,
       detectRetina: true,
       attribution: selectedTileServer.attribution,
     }).addTo(this.map);
-
   }
 
   renderMapFirst() {
-    let _this = this;
-    this.map.whenReady(function(ctx, options) {
-      _this.renderMap({animate: false});
+    const _this = this;
+    this.map.whenReady((ctx, options) => {
+      _this.renderMap({ animate: false });
     });
   }
 
-  renderMap(options?: Object) {
-
+  renderMap(options?: {}) {
     options = options || {};
-    _.defaults(options, {animate: true});
+    _.defaults(options, { animate: true });
 
     if (!this.legend && this.ctrl.settings.showLegend) {
       this.createLegend();
@@ -98,10 +93,9 @@ export default class WorldMap {
     setTimeout(() => {
       this.drawMap(options);
     }, 1);
-
   }
 
-  drawMap(options?: Object) {
+  drawMap(options?: {}) {
     console.info('Drawing map');
     this.resize();
     if (this.ctrl.mapCenterMoved) {
@@ -112,15 +106,15 @@ export default class WorldMap {
 
   getEffectiveZoomLevel(zoomLevel) {
     if (this.ctrl.settings.maximumZoom) {
-      zoomLevel = Math.min(parseInt(this.ctrl.settings.maximumZoom), zoomLevel);
+      zoomLevel = Math.min(parseInt(this.ctrl.settings.maximumZoom, 10), zoomLevel);
     }
     return zoomLevel;
   }
 
   createLegend() {
-    this.legend = (<any>window).L.control({ position: 'bottomleft' });
+    this.legend = (window as any).L.control({ position: 'bottomleft' });
     this.legend.onAdd = () => {
-      this.legend._div = (<any>window).L.DomUtil.create('div', 'info legend');
+      this.legend._div = (window as any).L.DomUtil.create('div', 'info legend');
       this.legend.update();
       return this.legend._div;
     };
@@ -128,13 +122,7 @@ export default class WorldMap {
     this.legend.update = () => {
       const thresholds = this.ctrl.data.thresholds;
       let legendHtml = '';
-      legendHtml +=
-        '<div class="legend-item"><i style="background:' +
-        this.ctrl.settings.colors[0] +
-        '"></i> ' +
-        '&lt; ' +
-        thresholds[0] +
-        '</div>';
+      legendHtml += '<div class="legend-item"><i style="background:' + this.ctrl.settings.colors[0] + '"></i> ' + '&lt; ' + thresholds[0] + '</div>';
       for (let index = 0; index < thresholds.length; index += 1) {
         legendHtml +=
           '<div class="legend-item"><i style="background:' +
@@ -151,11 +139,9 @@ export default class WorldMap {
     if (this.ctrl.settings.legendContainerSelector) {
       $(this.ctrl.settings.legendContainerSelector).append(this.legend._div);
     }
-
   }
 
   needToRedrawCircles(data) {
-
     console.info(`Data points ${data.length}. Circles on map ${this.circles.length}.`);
 
     if (this.circles.length === 0 && data.length > 0) {
@@ -172,14 +158,14 @@ export default class WorldMap {
   }
 
   filterEmptyAndZeroValues(data) {
-    const count_before = data.length;
+    const countBefore = data.length;
     data = _.filter(data, o => {
       return !(this.ctrl.settings.hideEmpty && _.isNil(o.value)) && !(this.ctrl.settings.hideZero && o.value === 0);
     });
-    const count_after = data.length;
-    const count_filtered = count_after - count_before;
-    if (count_filtered > 0) {
-      console.info(`Filtered ${count_filtered} records`);
+    const countAfter = data.length;
+    const countFiltered = countAfter - countBefore;
+    if (countFiltered > 0) {
+      console.info(`Filtered ${countFiltered} records`);
     }
     return data;
   }
@@ -195,11 +181,11 @@ export default class WorldMap {
   drawCircles() {
     const data = this.filterEmptyAndZeroValues(this.ctrl.data);
     if (this.needToRedrawCircles(data)) {
-      console.info('Creating circles')
+      console.info('Creating circles');
       this.clearCircles();
       this.createCircles(data);
     } else {
-      console.info('Updating circles')
+      console.info('Updating circles');
       this.updateCircles(data);
     }
   }
@@ -207,13 +193,25 @@ export default class WorldMap {
   createCircles(data) {
     console.log('createCircles: begin');
     const circles: any[] = [];
+    const circlesByKey = {};
     data.forEach(dataPoint => {
       // Todo: Review: Is a "locationName" really required
-      //  just for displaying a circle on a map?
+      //       just for displaying a circle on a map?
       if (!dataPoint.locationName) {
         return;
       }
-      circles.push(this.createCircle(dataPoint));
+      let circle;
+
+      if (circlesByKey[dataPoint.key] === undefined) {
+        // Create circle.
+        circle = this.createCircle(dataPoint);
+        circles.push(circle);
+        circlesByKey[dataPoint.key] = circle;
+      } else {
+        // Amend popup content if circle has been created already.
+        circle = circlesByKey[dataPoint.key];
+        this.extendPopupContent(circle, dataPoint);
+      }
     });
     this.circlesLayer = this.addCircles(circles);
     this.circles = circles;
@@ -221,44 +219,70 @@ export default class WorldMap {
   }
 
   updateCircles(data) {
+    const circlesByKey = {};
     data.forEach(dataPoint => {
+      // Todo: Review: Is a "locationName" really required
+      //       just for displaying a circle on a map?
       if (!dataPoint.locationName) {
         return;
       }
 
-      const circle = _.find(this.circles, cir => {
-        return cir.options.location === dataPoint.key;
-      });
-
-      if (circle) {
-        circle.setRadius(this.calcCircleSize(dataPoint.value || 0));
-        circle.setStyle({
-          color: this.getColor(dataPoint.value),
-          fillColor: this.getColor(dataPoint.value),
-          fillOpacity: 0.5,
-          location: dataPoint.key,
-        });
-        circle.unbindPopup();
-        this.createClickthrough(circle, dataPoint);
-        this.createPopup(circle, dataPoint.locationName, dataPoint.valueRounded);
+      if (circlesByKey[dataPoint.key] === undefined) {
+        // Update circle.
+        const circle = this.updateCircle(dataPoint);
+        if (circle) {
+          circlesByKey[dataPoint.key] = circle;
+        }
+      } else {
+        // Amend popup content if circle has been updated already.
+        const circle = circlesByKey[dataPoint.key];
+        this.extendPopupContent(circle, dataPoint);
       }
     });
   }
 
   createCircle(dataPoint) {
-    const circle = (<any>window).L.circleMarker([dataPoint.locationLatitude, dataPoint.locationLongitude], {
+    const circle = (window as any).L.circleMarker([dataPoint.locationLatitude, dataPoint.locationLongitude], {
       radius: this.calcCircleSize(dataPoint.value || 0),
       color: this.getColor(dataPoint.value),
       fillColor: this.getColor(dataPoint.value),
       fillOpacity: 0.5,
       location: dataPoint.key,
       stroke: Boolean(this.ctrl.settings.circleOptions.strokeEnabled),
-      weight: parseInt(this.ctrl.settings.circleOptions.strokeWeight) || 3,
+      weight: parseInt(this.ctrl.settings.circleOptions.strokeWeight, 10) || 3,
     });
 
     this.createClickthrough(circle, dataPoint);
-    this.createPopup(circle, dataPoint.locationName, dataPoint.valueRounded);
+    const content = this.getPopupContent(dataPoint.locationName, dataPoint.valueRounded);
+    this.createPopup(circle, content);
     return circle;
+  }
+
+  updateCircle(dataPoint) {
+    // Find back circle object by data point key.
+    const circle = _.find(this.circles, cir => {
+      return cir.options.location === dataPoint.key;
+    });
+
+    if (circle) {
+      circle.setRadius(this.calcCircleSize(dataPoint.value || 0));
+      circle.setStyle({
+        color: this.getColor(dataPoint.value),
+        fillColor: this.getColor(dataPoint.value),
+        fillOpacity: 0.5,
+        location: dataPoint.key,
+      });
+
+      // Re-create popup.
+      circle.unbindPopup();
+      const content = this.getPopupContent(dataPoint.locationName, dataPoint.valueRounded);
+      this.createPopup(circle, content);
+
+      // Re-create clickthrough-link.
+      this.createClickthrough(circle, dataPoint);
+
+      return circle;
+    }
   }
 
   calcCircleSize(dataPointValue) {
@@ -266,11 +290,11 @@ export default class WorldMap {
     const circleMaxSize = parseInt(this.ctrl.settings.circleMaxSize, 10) || 10;
 
     // If measurement value equals zero, use minimum circle size.
-    if (dataPointValue == 0) {
+    if (dataPointValue === 0) {
       return circleMinSize;
     }
 
-    if (this.ctrl.data.valueRange == 0) {
+    if (this.ctrl.data.valueRange === 0) {
       return circleMaxSize;
     }
 
@@ -310,8 +334,8 @@ export default class WorldMap {
     // Attach "onclick" event to data point linking.
     if (linkUrl) {
       const clickthroughOptions = this.ctrl.settings.clickthroughOptions;
-      circle.on('click', function onClick(evt) {
-        if (clickthroughOptions.windowName) {
+      circle.on('click', evt => {
+        if (clickthroughOptions && clickthroughOptions.windowName) {
           window.open(linkUrl, clickthroughOptions.windowName);
         } else {
           window.location.assign(linkUrl);
@@ -320,7 +344,36 @@ export default class WorldMap {
     }
   }
 
-  createPopup(circle, locationName, value) {
+  createPopup(circle, label) {
+    circle.bindPopup(label, {
+      offset: (window as any).L.point(0, -2),
+      className: 'worldmap-popup',
+      closeButton: this.ctrl.settings.stickyLabels,
+      autoPan: this.ctrl.settings.autoPanLabels,
+      autoWidth: this.ctrl.settings.autoWidthLabels,
+    });
+
+    circle.on('mouseover', evt => {
+      const layer = evt.target;
+      layer.bringToFront();
+      circle.openPopup();
+    });
+
+    if (!this.ctrl.settings.stickyLabels) {
+      circle.on('mouseout', () => {
+        circle.closePopup();
+      });
+    }
+  }
+
+  extendPopupContent(circle, dataPoint) {
+    const popup = circle.getPopup();
+    let popupContent = popup._content;
+    popupContent += `\n${this.getPopupContent(dataPoint.locationName, dataPoint.valueRounded)}`;
+    circle.setPopupContent(popupContent);
+  }
+
+  getPopupContent(locationName, value) {
     let unit;
     if (_.isNaN(value)) {
       value = 'n/a';
@@ -328,25 +381,7 @@ export default class WorldMap {
       unit = value && value === 1 ? this.ctrl.settings.unitSingular : this.ctrl.settings.unitPlural;
     }
     const label = `${locationName}: ${value} ${unit || ''}`.trim();
-    circle.bindPopup(label, {
-      offset: (<any>window).L.point(0, -2),
-      className: 'worldmap-popup',
-      closeButton: this.ctrl.settings.stickyLabels,
-      autoPan: this.ctrl.settings.autoPanLabels,
-      autoWidth: this.ctrl.settings.autoWidthLabels,
-    });
-
-    circle.on('mouseover', function onMouseOver(evt) {
-      const layer = evt.target;
-      layer.bringToFront();
-      this.openPopup();
-    });
-
-    if (!this.ctrl.settings.stickyLabels) {
-      circle.on('mouseout', function onMouseOut() {
-        circle.closePopup();
-      });
-    }
+    return label;
   }
 
   getColor(value) {
@@ -363,6 +398,7 @@ export default class WorldMap {
   }
 
   panToMapCenter(options?: any) {
+    console.log('panToMapCenter');
 
     // Get a bunch of metadata from settings and data which
     // controls the map centering and zoom level.
@@ -384,7 +420,6 @@ export default class WorldMap {
           zoomLevel = this.map.getBoundsZoom(bounds);
         }
       }
-
     } else if (mapDimensions.mapZoomByRadius) {
       // Compute zoom level based on current coordinates and given radius in kilometers.
       // This is done by temporarily adding a circle with the respective radius and
@@ -393,7 +428,7 @@ export default class WorldMap {
       // frame will not trigger any animations, see
       // https://github.com/Leaflet/Leaflet/issues/5357#issuecomment-282023917
       const radius = mapDimensions.mapZoomByRadius * 1000.0;
-      const circle = L.circle(coordinates, {radius: radius}).addTo(this.map);
+      const circle = L.circle(coordinates, { radius: radius }).addTo(this.map);
       const bounds = circle.getBounds();
       circle.remove();
       coordinates = bounds.getCenter();
@@ -422,10 +457,26 @@ export default class WorldMap {
     }
   }
 
+  setDragging() {
+    if (!this.ctrl.settings.dragging) {
+      this.map.dragging.disable();
+    } else {
+      this.map.dragging.enable();
+    }
+  }
+
+  setDoubleClickZoom() {
+    if (!this.ctrl.settings.doubleClickZoom) {
+      this.map.doubleClickZoom.disable();
+    } else {
+      this.map.doubleClickZoom.enable();
+    }
+  }
+
   addCircles(circles) {
     // Todo: Optionally add fixed custom attributions to the circle layer.
-    let attribution;
-    return (<any>window).L.layerGroup(circles, {attribution: attribution}).addTo(this.map);
+    const attribution = undefined;
+    return (window as any).L.layerGroup(circles, { attribution: attribution }).addTo(this.map);
   }
 
   removeCircles() {
@@ -450,7 +501,6 @@ export default class WorldMap {
   drawCustomAttribution() {
     // The operator wants a custom attribution.
     if (this.ctrl.settings.customAttribution) {
-
       // The custom attribution text.
       const attribution = this.ctrl.settings.customAttributionText;
 
@@ -460,5 +510,4 @@ export default class WorldMap {
       attributionControl.addAttribution(attribution);
     }
   }
-
 }
