@@ -19,7 +19,7 @@ const tileServers = {
     subdomains: 'abcd',
   },
   'Google Hybrid': {
-    url: 'http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+    url: 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
     attribution: 'Tiles &copy; Google',
     subdomains: ['mt0','mt1','mt2','mt3'],
   },
