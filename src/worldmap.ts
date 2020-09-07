@@ -18,6 +18,11 @@ const tileServers = {
       '&copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
     subdomains: 'abcd',
   },
+  'Google Hybrid': {
+    url: 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+    attribution: 'Tiles &copy; Google',
+    subdomains: ['mt0','mt1','mt2','mt3'],
+  },
   'Esri Satellite': {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri',
@@ -65,7 +70,7 @@ export default class WorldMap {
 
     const selectedTileServer = tileServers[this.ctrl.tileServer];
     (<any>window).L.tileLayer(selectedTileServer.url, {
-      maxZoom: 18,
+      maxZoom: 20,
       subdomains: selectedTileServer.subdomains,
       reuseTiles: true,
       detectRetina: true,
